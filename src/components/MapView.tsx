@@ -1,28 +1,80 @@
-import React from "react";
-import { GoogleMap, LoadScript } from "@react-google-maps/api";
+import React, { useEffect, useRef, useState } from "react";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
-/** Ajuste de estilo: ocupar toda a viewport */
+// Tamanho do contêiner
 const containerStyle: React.CSSProperties = {
   width: "100%",
-  height: "100vh", // tela inteira
+  height: "100vh",
 };
 
-// Coordenadas iniciais (exemplo: Brasília)
-const center = { lat: -15.793889, lng: -47.882778 };
+// Centro inicial se a geolocalização falhar
+const fallbackCenter = { lat: -15.793889, lng: -47.882778 }; // Brasília
 
 export default function MapView() {
+  // Estado que guardará a posição do usuário
+  const [myLocation, setMyLocation] =
+    useState<google.maps.LatLngLiteral | null>(null);
+
+  // Referência ao mapa para poder chamar panTo()
+  const mapRef = useRef<google.maps.Map | null>(null);
+
+  /* 1. Pedir a posição quando o componente montar */
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation não suportada neste navegador.");
+      return;
+    }
+
+    // Salva o id de “watch” para poder cancelar depois
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setMyLocation(loc);
+
+        // 2. Centraliza e aproxima o mapa
+        if (mapRef.current) {
+          mapRef.current.panTo(loc);
+          mapRef.current.setZoom(14);
+        }
+      },
+      (err) => {
+        console.error("Erro ao obter localização:", err);
+        // Deixe o mapa no fallbackCenter; você pode exibir um alerta ao usuário aqui.
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
+
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
       <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
-        zoom={5}
-        options={{
-          mapTypeId: "roadmap", // satélite + labels (bom para incêndios)
-          disableDefaultUI: true,
+        onLoad={(map) => {
+          mapRef.current = map;
         }}
+        mapContainerStyle={containerStyle}
+        center={fallbackCenter} // usado só até descobrir a posição real
+        zoom={5}
+        mapTypeId="roadmap"
       >
-        {/* Aqui você futuramente colocará marcadores, heatmaps, etc. */}
+        {/* 3. Desenha o marcador se já temos a posição */}
+        {myLocation && (
+          <Marker
+            position={myLocation}
+            title="Você está aqui"
+            /* Ícone azul circular simples; troque por PNG/SVG se quiser */
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#4285F4",
+              fillOpacity: 1,
+              strokeColor: "#ffffff",
+              strokeWeight: 2,
+            }}
+          />
+        )}
       </GoogleMap>
     </LoadScript>
   );
