@@ -18,8 +18,8 @@ export default function MapView() {
         center={center}
         zoom={5}
         options={{
-          mapTypeId: "hybrid", // satélite + labels (bom para incêndios)
-          disableDefaultUI: false,
+          mapTypeId: "roadmap", // satélite + labels (bom para incêndios)
+          disableDefaultUI: true,
         }}
       >
         {/* Aqui você futuramente colocará marcadores, heatmaps, etc. */}
