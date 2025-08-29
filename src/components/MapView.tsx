@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { useWildfires } from "@/hooks/useWildfires";
+import {
+  GoogleMap,
+  LoadScript,
+  Marker,
+  InfoWindow,
+} from "@react-google-maps/api";
+import { useWildfires, type WildfirePoint } from "@/hooks/useWildfires";
 
 // Tamanho do contêiner
 const containerStyle: React.CSSProperties = {
@@ -52,6 +57,9 @@ export default function MapView() {
   /*wild fires */
   const { data: fires } = useWildfires();
 
+  /* 🔥 1. estado do balão aberto */
+  const [selected, setSelected] = useState<WildfirePoint | null>(null);
+
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
       <GoogleMap
@@ -90,8 +98,22 @@ export default function MapView() {
               url: "https://maps.google.com/mapfiles/ms/icons/firedept.png",
               scaledSize: new google.maps.Size(32, 32),
             }}
+            onClick={() => setSelected(p)} // 🔥 2. abre o infowindow ao clicar
           />
         ))}
+
+        {/* 🔥 3. InfoWindow se houver selected */}
+        {selected && (
+          <InfoWindow
+            position={selected.position}
+            onCloseClick={() => setSelected(null)} //x button
+          >
+            <div className="max-w-xs">
+              <h3 className="font-semibold text-red-700">{selected.title}</h3>
+              <p className="text-sm text-gray-700">ID: {selected.id}</p>
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </LoadScript>
   );
