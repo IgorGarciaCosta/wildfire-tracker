@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { useWildfires } from "@/hooks/useWildfires";
 
 // Tamanho do contêiner
 const containerStyle: React.CSSProperties = {
@@ -48,6 +49,9 @@ export default function MapView() {
     };
   }, []);
 
+  /*wild fires */
+  const { data: fires } = useWildfires();
+
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
       <GoogleMap
@@ -75,6 +79,19 @@ export default function MapView() {
             }}
           />
         )}
+
+        {/* marcadores de incêndio */}
+        {fires?.map((p) => (
+          <Marker
+            key={p.id + p.when} // id + data para evitar repetidos
+            position={p.position}
+            title={`${p.title}\n${new Date(p.when).toLocaleString()}`}
+            icon={{
+              url: "https://maps.google.com/mapfiles/ms/icons/firedept.png",
+              scaledSize: new google.maps.Size(32, 32),
+            }}
+          />
+        ))}
       </GoogleMap>
     </LoadScript>
   );
